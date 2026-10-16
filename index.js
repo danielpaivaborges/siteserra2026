@@ -10,6 +10,7 @@ const PUBLIC = path.join(ROOT, 'public');
 const rawBase = String(process.env.BASE_PATH || '').trim();
 if (rawBase && !/^\/[a-zA-Z0-9/_-]*$/.test(rawBase)) throw new Error('BASE_PATH inválido');
 const BASE = rawBase.replace(/\/+$/, '');
+const VERSION = '1.1.1';
 const PORT = Number(process.env.PORT || process.env.PORT_INDEX || process.env.PORT_APP || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const TTL = 5 * 60_000;
@@ -88,7 +89,9 @@ async function serveAsset(res, relativePath, method) {
   try {
     if (!(await stat(target)).isFile()) throw Object.assign(new Error('missing'),{code:'ENOENT'});
     const raw=await readFile(target);
-    res.writeHead(200, {'Content-Type':MIME[ext], 'Cache-Control':'public, max-age=900'});
+    // JavaScript e CSS devem ser sempre obtidos na versão atual, evitando módulos desatualizados.
+    const cacheControl = ['.js', '.css'].includes(ext) ? 'no-store' : 'public, max-age=900';
+    res.writeHead(200, {'Content-Type':MIME[ext], 'Cache-Control':cacheControl});
     res.end(method==='HEAD'?undefined:raw);
   } catch(e) {
     return respondJSON(res, e.code==='ENOENT'?404:500,
@@ -125,7 +128,7 @@ export const server=createServer(async(req,res)=>{
   if(localPath==='/api/health'){
     return respondJSON(res,200,{
       sistema:'Portal da Transparência - Pref.Mun.de Serra da Saudade MG',
-      version:'1.1.0', status:'online'
+      version:VERSION, status:'online'
     }, req.method);
   }
   if(localPath==='/api/periodo'){
@@ -177,7 +180,7 @@ export const server=createServer(async(req,res)=>{
 });
 if(process.env.NODE_ENV!=='test'){
   server.listen(PORT,HOST,()=>{
-    console.log(`Portal da Transparência v1.1: http://localhost:${PORT}${BASE || '/'}`);
+    console.log(`Portal da Transparência v${VERSION}: http://localhost:${PORT}${BASE || '/'}`);
     console.log('HTTPS público: configurar certificado/proxy da KingHost antes da publicação.');
   });
 }

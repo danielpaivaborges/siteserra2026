@@ -106,3 +106,26 @@ Uma amostra de 16/10/2026 (01/01 a 16/10) apresentou **6.468 registros / 324 pá
 **Privacidade:** os números de documentos pessoais e os campos de identificação bruta são descartados; o texto do fornecedor é derivado somente da denominação, higienizado. Não armazenar o JSON bruto em arquivos públicos.
 
 A consulta do novo módulo precisa ser homologada contra o servidor real em ambiente de desenvolvimento. Os testes automatizados validam contratos, paginação e o JSON de exemplo, mas não substituem essa homologação.
+
+## Atualização v1.1.1 — Problema de cache no navegador
+
+Se a página de despesas orçamentárias ainda mostrar «Próxima etapa»,
+o navegador está exibindo o JavaScript antigo ou há um processo Node.js antigo
+em execução. Esta atualização adiciona `?v=1.1.1` aos assets e desativa
+o cache dos arquivos `.js` e `.css`, sem alterar os conectores.
+
+No Windows, encerre o servidor anterior com Ctrl+C e execute:
+
+```powershell
+cd I:\siteserra2026
+git pull origin main
+$env:HOST = "127.0.0.1"
+$env:PORT = "4173"
+npm.cmd start
+```
+
+Abra `http://localhost:4173/api/health` para confirmar `version: 1.1.1`.
+Depois abra `http://localhost:4173/despesas/orcamentarias` e pressione
+`Ctrl + Shift + R` uma vez, caso necessário.
+
+A atualização não habilita HTTPS local; HTTPS público depende do certificado e proxy KingHost.

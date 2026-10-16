@@ -12,7 +12,7 @@ test.after(()=>new Promise(resolve=>server.close(resolve)));
 
 test('responde indicador de funcionamento',async()=>{
  const r=await fetch(base+'/api/health');const d=await r.json();
- assert.equal(r.status,200);assert.equal(d.status,'online');
+ assert.equal(r.status,200);assert.equal(d.status,'online');assert.equal(d.version,'1.1.1');
  assert.match(d.sistema,/Pref\.Mun\.de Serra da Saudade MG/);
  assert.equal(r.headers.get('x-content-type-options'),'nosniff');
 });
@@ -27,7 +27,7 @@ test('permite links diretos dos módulos e devolve HTML',async()=>{
  const r=await fetch(base+'/licitacoes');
  const text=await r.text();
  assert.equal(r.status,200);assert.match(text,/Portal da Transparência/);
- assert.match(text,/assets\/app\.js/);
+ assert.match(text,/assets\/app\.js\?v=1\.1\.1/);
  assert.doesNotMatch(text,/transparencia\.serradasaudade\.mg\.gov\.br/);
 });
 test('entrega CSS com cabeçalhos restritivos',async()=>{
@@ -52,4 +52,18 @@ test('protege as datas do novo módulo e inicia coleta em segundo plano',async()
   assert.equal(webpage.status,200);
   const html=await webpage.text();
   assert.match(html,/Portal da Transparência/);
+});
+
+test('evita carregar JavaScript antigo após atualização',async()=>{
+  const page=await (await fetch(base+'/despesas/orcamentarias')).text();
+  assert.match(page,/assets\/app\.js\?v=1\.1\.1/);
+  assert.match(page,/assets\/styles\.css\?v=1\.1\.1/);
+  const js=await fetch(base+'/assets/app.js?v=1.1.1');
+  assert.equal(js.status,200);
+  assert.equal(js.headers.get('cache-control'),'no-store');
+  const code=await js.text();
+  assert.match(code,/if\(route==='\/despesas\/orcamentarias'\)/);
+  assert.match(code,/loadOrc\(\)/);
+  const css=await fetch(base+'/assets/styles.css?v=1.1.1');
+  assert.equal(css.headers.get('cache-control'),'no-store');
 });
