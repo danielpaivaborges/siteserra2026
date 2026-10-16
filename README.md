@@ -136,3 +136,6 @@ A atualização não habilita HTTPS local; HTTPS público depende do certificado
 - No celular, as tabelas financeiras viram cartões com todas as informações identificadas, sem cortar colunas.
 - Janela móvel de seis meses preservada integralmente nas APIs; conectores não foram alterados.
 - Para atualizar localmente: `git pull origin main`, reinicie `npm.cmd start`, confira `/api/health` versão 1.2.0.
+
+## Versão 1.3 — receitas orçamentárias
+Rota `/receitas` integrada à consulta pública, período móvel de seis meses. Classificações contábeis hierárquicas não são somadas. Previsão pode corresponder ao exercício; arrecadação ao período.

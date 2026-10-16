@@ -4,13 +4,14 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { consultarSeisMeses, obterPeriodoMovel } from './integracoes/despesa-extra.mjs';
 import { consultarSeisMesesOrc } from './integracoes/despesa-orcamentaria.mjs';
+import { consultarSeisMesesReceita } from './integracoes/receita-orcamentaria.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(ROOT, 'public');
 const rawBase = String(process.env.BASE_PATH || '').trim();
 if (rawBase && !/^\/[a-zA-Z0-9/_-]*$/.test(rawBase)) throw new Error('BASE_PATH inválido');
 const BASE = rawBase.replace(/\/+$/, '');
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 const PORT = Number(process.env.PORT || process.env.PORT_INDEX || process.env.PORT_APP || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const TTL = 5 * 60_000;
@@ -28,6 +29,7 @@ const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 's
 const isProduction = process.env.NODE_ENV === 'production';
 let cached = null, inFlight = null;
 let orcJob = null;
+let receitaCache=null, receitaPendente=null;
 const ORC_TTL = 5 * 60_000;
 function iniciarColetaOrc(){
   const key=getPeriodKey(), agora=Date.now();
@@ -49,6 +51,14 @@ function iniciarColetaOrc(){
   return job;
 }
 
+async function getReceitas(){
+ const key=getPeriodKey(),now=Date.now();
+ if(receitaCache?.key===key&&now-receitaCache.at<TTL)return receitaCache.data;
+ if(receitaPendente?.key===key)return receitaPendente.promise;
+ const promise=consultarSeisMesesReceita().then(data=>{receitaCache={key,at:Date.now(),data};return data});
+ receitaPendente={key,promise};
+ try{return await promise}finally{if(receitaPendente?.promise===promise)receitaPendente=null}
+}
 function commonHeaders(res) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -136,6 +146,13 @@ export const server=createServer(async(req,res)=>{
       periodo:obterPeriodoMovel(),
       regra:'seis_meses_moveis', fuso:'America/Sao_Paulo'
     },req.method);
+  }
+  if(localPath==='/api/receitas/orcamentarias'){
+    if(parsed.searchParams.size)return respondJSON(res,400,{erro:'Período automático de seis meses.'},req.method);
+    try{return respondJSON(res,200,await getReceitas(),req.method)}
+    catch(e){console.error('[receita orçamentária]',e?.codigo||'ERRO',e?.message||'falha');
+      return respondJSON(res,e?.status||502,{codigo:e?.codigo||'FONTE_INDISPONIVEL',
+      erro:'Não foi possível concluir a consulta. Nenhum resultado parcial é exibido.'},req.method);}
   }
   if(localPath==='/api/despesas/extraorcamentarias'){
     if(parsed.searchParams.size){

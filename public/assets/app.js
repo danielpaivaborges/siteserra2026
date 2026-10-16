@@ -4,7 +4,7 @@ const PORTAL='Portal da Transparência - Pref.Mun.de Serra da Saudade MG';
 const ROOT=document.getElementById('conteudo');
 const routes=[
   {path:'/',label:'Visão geral',icon:'layout-dashboard',section:'Início',description:'Panorama e acesso aos dados públicos da administração municipal.'},
-  {path:'/receitas',label:'Receitas públicas',icon:'trending-up',section:'Finanças',description:'Arrecadação, origem dos recursos, evolução mensal e detalhamento.'},
+  {path:'/receitas',label:'Receitas públicas',icon:'trending-up',section:'Finanças',description:'Receitas por classificação, previsão e arrecadação.',ready:true},
   {path:'/despesas/orcamentarias',label:'Despesas orçamentárias',icon:'wallet',section:'Finanças',description:'Movimentos de empenho, liquidação e pagamento, por fornecedor e processo.',ready:true},
   {path:'/despesas/extraorcamentarias',label:'Despesas extraorçamentárias',icon:'receipt-text',section:'Finanças',description:'Movimentações extraorçamentárias detalhadas dos últimos seis meses.',ready:true},
   {path:'/demonstrativos',label:'Demonstrativos fiscais',icon:'chart-no-axes-combined',section:'Finanças',description:'RREO, RGF, balanços e relatórios de execução fiscal.'},
@@ -74,7 +74,7 @@ function dashboard(){
  ${sectionHead('O que você encontra aqui','<span class="section-note">A estrutura dos módulos será aprimorada continuamente</span>')}
  <div class="stat-grid">
    <div class="stat-card"><div class="stat-top"><span>Período dos painéis financeiros</span><span class="icon-square">${icon('calendar-days')}</span></div><div class="stat-value small">6 meses</div><div class="stat-sub">Janela móvel, atualizada automaticamente</div></div>
-   <div class="stat-card"><div class="stat-top"><span>Consultas financeiras</span><span class="icon-square blue">${icon('activity')}</span></div><div class="stat-value small">2 modalidades</div><div class="stat-sub"><strong>Orçamentárias e extraorçamentárias</strong> · consulta automatizada</div></div>
+   <div class="stat-card"><div class="stat-top"><span>Consultas financeiras</span><span class="icon-square blue">${icon('activity')}</span></div><div class="stat-value small">3 modalidades</div><div class="stat-sub"><strong>Receitas e despesas</strong> · consulta automatizada</div></div>
    <div class="stat-card"><div class="stat-top"><span>Navegação</span><span class="icon-square gold">${icon('layout-dashboard')}</span></div><div class="stat-value small">${routes.length} áreas</div><div class="stat-sub">Estrutura modular em construção</div></div>
  </div>
  ${sectionHead('Acesse por assunto',navA('/despesas/orcamentarias',`Consultar despesas orçamentárias ${icon('arrow-right')}`))}
@@ -228,6 +228,72 @@ async function loadOrc(force=false){
  finally{orcState.loading=false;if(actualPath()==='/despesas/orcamentarias'){ROOT.innerHTML=orcShell();renderOrcResults()}}
 }
 
+
+const recState={data:null,loading:false,error:null,q:'',nivel:'DETALHE',sort:'name',page:1};
+const recNiveis={RECEITA:'Categoria',SUBRECEITA:'Subcategoria',DESRUBRICARECEITA:'Rubrica',DESFONTERECEITA:'Fonte de recurso',DETALHE:'Receita detalhada'};
+function recShell(){
+ const data=recState.data,p=data?.metadados?.periodo;
+ return `${heading('Finanças públicas · Arrecadação','Receitas orçamentárias','Receitas previstas e arrecadadas nos últimos seis meses, organizadas por classificação.',`<button id="rec-refresh" type="button" class="small-action">${icon('refresh-cw')} Atualizar</button>`)}
+ <div class="meta-tags"><span class="tag">${icon('calendar-days')} ${p?fmtDate(p.inicio)+' até '+fmtDate(p.fim):'Período automático · seis meses'}</span><span class="tag">${icon('shield-check')} Consulta protegida</span></div>
+ ${sectionHead('Receitas por classificação','<span class="section-note">Sem soma de níveis hierárquicos</span>')}
+ ${recState.loading?'<div class="panel loading-block" role="status"><div class="spinner"></div>Consultando receitas…</div>':''}
+ ${recState.error?`<div class="error-panel" role="alert">${icon('alert-circle')} ${esc(recState.error)}</div>`:''}
+ ${data?`<div class="data-toolbar"><div class="input-with-icon">${icon('search')}<input id="rec-q" class="text-input" aria-label="Pesquisar receitas" value="${esc(recState.q)}" placeholder="Buscar receita, código ou fonte..."></div>
+ <select id="rec-level" class="select-input" aria-label="Nível de classificação">
+ <option value="DETALHE" ${recState.nivel==='DETALHE'?'selected':''}>Receitas detalhadas</option>
+ <option value="TODOS" ${recState.nivel==='TODOS'?'selected':''}>Todas as classificações</option>
+ ${Object.entries(recNiveis).filter(([v])=>v!=='DETALHE').map(([v,t])=>`<option value="${v}" ${recState.nivel===v?'selected':''}>${esc(t)}</option>`).join('')}</select>
+ <select id="rec-sort" class="select-input" aria-label="Ordenar receitas"><option value="name">Receita (A–Z)</option>
+ <option value="value" ${recState.sort==='value'?'selected':''}>Maior arrecadação</option><option value="code" ${recState.sort==='code'?'selected':''}>Código</option></select>
+ <button id="rec-export" class="toolbar-button" type="button">${icon('download')} Exportar CSV</button></div>
+ <section class="panel supplier-list"><div class="overview-title"><h2>Registros de receita</h2><span id="rec-count" class="chip green"></span></div><div id="rec-results"></div></section>`:''}
+ <div class="notice-banner">${icon('info')}<div><strong>Interpretação dos dados</strong><p>O mesmo valor pode constar em categorias e detalhamentos diferentes; por isso, não os somamos. A arrecadação corresponde à consulta dos últimos seis meses. A previsão informada pode se referir ao exercício anual.</p></div></div>`;
+}
+function filteredRec(){
+ if(!recState.data)return [];
+ const q=recState.q.trim().toLocaleLowerCase('pt-BR');
+ return recState.data.dados.filter(x=>(recState.nivel==='TODOS'||recState.nivel===x.nivel)&&
+ (!q||[x.receita,x.codigo,x.fonte].some(t=>String(t??'').toLocaleLowerCase('pt-BR').includes(q))))
+ .sort((a,b)=>recState.sort==='value'?(b.arrecadado??-Infinity)-(a.arrecadado??-Infinity):
+ recState.sort==='code'?a.codigo.localeCompare(b.codigo,'pt-BR'):a.receita.localeCompare(b.receita,'pt-BR'));
+}
+function renderRec(){
+ const el=document.getElementById('rec-results');if(!el||!recState.data)return;
+ const rows=filteredRec(),pages=Math.max(1,Math.ceil(rows.length/pageSize));
+ recState.page=Math.max(1,Math.min(recState.page,pages));
+ const current=rows.slice((recState.page-1)*pageSize,recState.page*pageSize);
+ const count=document.getElementById('rec-count');if(count)count.textContent=rows.length.toLocaleString('pt-BR')+' registros';
+ el.innerHTML=`<div class="table-wrap"><table class="data-table responsive-table"><thead><tr><th>Receita</th><th>Código / nível</th><th>Fonte de recursos</th><th>Previsão informada</th><th>Arrecadado no período</th></tr></thead><tbody>
+ ${current.length?current.map(x=>`<tr><td data-label="Receita"><strong class="supplier-name">${esc(x.receita)}</strong></td>
+ <td data-label="Código / nível">${esc(x.codigo)}<span class="subclass">${esc(recNiveis[x.nivel])}</span></td>
+ <td data-label="Fonte de recursos">${esc(x.fonte||'Não informada')}</td>
+ <td data-label="Previsão">${x.previsao===null?'—':money(x.previsao)}</td>
+ <td data-label="Arrecadado">${x.arrecadado===null?'—':money(x.arrecadado)}</td></tr>`).join(''):'<tr class="empty-row"><td colspan="5">Nenhum resultado.</td></tr>'}</tbody></table></div>
+ <div class="table-footer"><span>${rows.length?((recState.page-1)*pageSize+1):0}–${Math.min(recState.page*pageSize,rows.length)} de ${rows.length}</span>
+ <div class="page-buttons"><button data-rec-page="prev" type="button" ${recState.page===1?'disabled':''}>Anterior</button><span class="page-counter">${recState.page} / ${pages}</span><button data-rec-page="next" type="button" ${recState.page===pages?'disabled':''}>Próxima</button></div></div>`;
+}
+function exportRec(){
+ if(!recState.data)return;
+ const safe=v=>{let x=String(v??'');if(/^[\s]*[=+\-@\t\r]/.test(x))x="'"+x;return '"'+x.replaceAll('"','""')+'"'};
+ const list=[['Receita','Código','Nível','Fonte','Previsão informada','Arrecadado no período'],
+ ...filteredRec().map(x=>[x.receita,x.codigo,recNiveis[x.nivel],x.fonte,x.previsao??'',x.arrecadado??''])];
+ const csv='\ufeff'+list.map(r=>r.map(safe).join(';')).join('\r\n');
+ const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+ const a=document.createElement('a');a.href=url;a.download='receitas-orcamentarias-6-meses.csv';
+ document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function loadRec(force=false){
+ if(recState.loading)return;
+ if(recState.data&&!force){renderRec();return}
+ recState.data=null;recState.error=null;recState.loading=true;ROOT.innerHTML=recShell();
+ try{const resp=await fetch(urlFor('/api/receitas/orcamentarias'),{cache:'no-store'});
+ if(!resp.ok)throw new Error('Falha HTTP '+resp.status);
+ const data=await resp.json();if(!data?.metadados?.completo||!Array.isArray(data.dados))throw new Error('Resposta inesperada');
+ recState.data=data;
+ }catch(e){recState.error=e?.message||'Consulta indisponível'}
+ finally{recState.loading=false;if(actualPath()==='/receitas'){ROOT.innerHTML=recShell();renderRec()}}
+}
+
 function showRoute(){
  let route=actualPath();const entry=routes.find(r=>r.path===route);
  document.title=(entry?entry.label+' | ':'')+PORTAL;
@@ -237,6 +303,7 @@ function showRoute(){
  if(!entry){ROOT.innerHTML=heading('Navegação','Página não encontrada','A página solicitada não existe neste portal.')+navA('/','Voltar à visão geral','small-action');return}
  if(route==='/'){ROOT.innerHTML=dashboard();return}
  if(route==='/despesas/extraorcamentarias'){ROOT.innerHTML=expenseShell();if(expenseState.data)renderExpenseResults();else void loadExpenses();return}
+ if(route==='/receitas'){ROOT.innerHTML=recShell();if(recState.data)renderRec();else void loadRec();return}
  if(route==='/despesas/orcamentarias'){ROOT.innerHTML=orcShell();if(orcState.data)renderOrcResults();else void loadOrc();return}
  ROOT.innerHTML=placeholder(entry);
 }
@@ -263,6 +330,9 @@ document.addEventListener('click',event=>{
  if(event.target.closest('#global-search'))openSearch();
  if(event.target.closest('#close-search')||event.target.closest('[data-close-search]'))closeSearch();
  if(event.target.closest('#refresh-expenses')){expenseState.search='';expenseState.page=1;void loadExpenses(true)}
+ if(event.target.closest('#rec-refresh')){recState.page=1;void loadRec(true)}
+ if(event.target.closest('#rec-export'))exportRec();
+ const pg=event.target.closest('[data-rec-page]');if(pg){recState.page+=pg.dataset.recPage==='next'?1:-1;renderRec()}
  if(event.target.closest('#refresh-orc')){orcState.search='';orcState.tipo='Todos';orcState.page=1;void loadOrc(true)}
  if(event.target.closest('#orc-export'))exportOrcCSV();
  const orcPaging=event.target.closest('[data-orc-page]');
@@ -273,10 +343,13 @@ document.addEventListener('click',event=>{
 document.addEventListener('input',event=>{
  if(event.target.id==='search-input')renderSearch(event.target.value);
  if(event.target.id==='expense-search'){expenseState.search=event.target.value;expenseState.page=1;renderExpenseResults();}
+ if(event.target.id==='rec-q'){recState.q=event.target.value;recState.page=1;renderRec()}
  if(event.target.id==='orc-search'){orcState.search=event.target.value;orcState.page=1;renderOrcResults();}
 });
 document.addEventListener('change',event=>{
  if(event.target.id==='expense-sort'){expenseState.sort=event.target.value;expenseState.page=1;renderExpenseResults()}
+ if(event.target.id==='rec-level'){recState.nivel=event.target.value;recState.page=1;renderRec()}
+ if(event.target.id==='rec-sort'){recState.sort=event.target.value;recState.page=1;renderRec()}
  if(event.target.id==='orc-sort'){orcState.sort=event.target.value;orcState.page=1;renderOrcResults()}
  if(event.target.id==='orc-tipo'){orcState.tipo=event.target.value;orcState.page=1;renderOrcResults()}
 });
