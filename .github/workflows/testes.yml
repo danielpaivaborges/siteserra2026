@@ -1,0 +1,23 @@
+name: Validação do Portal
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar sintaxe do portal
+        run: |
+          node --check index.js
+          node --check public/assets/app.js
+          node --check integracoes/receita-orcamentaria.mjs
+      - name: Executar testes
+        run: npm test
