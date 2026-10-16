@@ -42,3 +42,14 @@ test('não entrega arquivos sensíveis',async()=>{
  const f=await fetch(base+'/api/desconhecida');
  assert.equal(f.status,404);
 });
+
+test('protege as datas do novo módulo e inicia coleta em segundo plano',async()=>{
+  const invalid=await fetch(base+'/api/despesas/orcamentarias?datInicio=2024-01-01');
+  assert.equal(invalid.status,400);
+  const invalidBody=await invalid.json();
+  assert.match(invalidBody.erro,/automático/);
+  const webpage=await fetch(base+'/despesas/orcamentarias');
+  assert.equal(webpage.status,200);
+  const html=await webpage.text();
+  assert.match(html,/Portal da Transparência/);
+});

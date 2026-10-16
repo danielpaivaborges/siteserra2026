@@ -7,7 +7,7 @@
 - Testes de segurança de rotas, API e conector, execução local.
 - Layout adaptável para celular e desktop.
 
-## Ciclo 2 — Módulo de despesas orçamentárias
+## Ciclo 2 — Módulo de despesas orçamentárias (conector criado, homologação pendente)
 - Capturar endpoint real em Rede/Fetch/XHR.
 - Estudar esquema dos registros, chaves únicas e paginação.
 - Definir visões orçamentárias: empenho, liquidação, pagamento.

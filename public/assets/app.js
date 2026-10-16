@@ -5,7 +5,7 @@ const ROOT=document.getElementById('conteudo');
 const routes=[
   {path:'/',label:'Visão geral',icon:'layout-dashboard',section:'Início',description:'Panorama e acesso aos dados públicos da administração municipal.'},
   {path:'/receitas',label:'Receitas públicas',icon:'trending-up',section:'Finanças',description:'Arrecadação, origem dos recursos, evolução mensal e detalhamento.'},
-  {path:'/despesas/orcamentarias',label:'Despesas orçamentárias',icon:'wallet',section:'Finanças',description:'Despesas empenhadas, liquidadas e pagas por período, credor e classificação.'},
+  {path:'/despesas/orcamentarias',label:'Despesas orçamentárias',icon:'wallet',section:'Finanças',description:'Movimentos de empenho, liquidação e pagamento, por fornecedor e processo.',ready:true},
   {path:'/despesas/extraorcamentarias',label:'Despesas extraorçamentárias',icon:'receipt-text',section:'Finanças',description:'Movimentações extraorçamentárias detalhadas dos últimos seis meses.',ready:true},
   {path:'/demonstrativos',label:'Demonstrativos fiscais',icon:'chart-no-axes-combined',section:'Finanças',description:'RREO, RGF, balanços e relatórios de execução fiscal.'},
   {path:'/licitacoes',label:'Licitações e editais',icon:'gavel',section:'Contratações',description:'Procedimentos licitatórios e respectivos arquivos publicados no PNCP.'},
@@ -74,16 +74,16 @@ function dashboard(){
  ${sectionHead('O que você encontra aqui','<span class="section-note">A estrutura dos módulos será aprimorada continuamente</span>')}
  <div class="stat-grid">
    <div class="stat-card"><div class="stat-top"><span>Período dos painéis financeiros</span><span class="icon-square">${icon('calendar-days')}</span></div><div class="stat-value small">6 meses</div><div class="stat-sub">Janela móvel, atualizada automaticamente</div></div>
-   <div class="stat-card"><div class="stat-top"><span>Consultas financeiras</span><span class="icon-square blue">${icon('activity')}</span></div><div class="stat-value small">Extraorçamentárias</div><div class="stat-sub"><strong>Conector implementado</strong> · dados reais sob consulta</div></div>
+   <div class="stat-card"><div class="stat-top"><span>Consultas financeiras</span><span class="icon-square blue">${icon('activity')}</span></div><div class="stat-value small">2 modalidades</div><div class="stat-sub"><strong>Orçamentárias e extraorçamentárias</strong> · consulta automatizada</div></div>
    <div class="stat-card"><div class="stat-top"><span>Navegação</span><span class="icon-square gold">${icon('layout-dashboard')}</span></div><div class="stat-value small">${routes.length} áreas</div><div class="stat-sub">Estrutura modular em construção</div></div>
  </div>
- ${sectionHead('Acesse por assunto',navA('/despesas/extraorcamentarias',`Ver consulta disponível ${icon('arrow-right')}`))}
+ ${sectionHead('Acesse por assunto',navA('/despesas/orcamentarias',`Consultar despesas orçamentárias ${icon('arrow-right')}`))}
  <div class="module-grid">${[routes[1],routes[2],routes[3],routes[5],routes[6],routes[9]].map(moduleCard).join('')}</div>
  <div class="notice-banner">${icon('info')}<div><strong>Estamos construindo o novo portal, módulo por módulo.</strong><p>Os espaços assinalados como “Em implantação” ainda não exibem dados. Nenhum valor demonstrativo será apresentado como informação oficial.</p></div></div>`;
 }
 function placeholder(entry){
  const isPNCP=['/licitacoes','/contratos','/atas'].includes(entry.path);
- const isFinance=['/receitas','/despesas/orcamentarias'].includes(entry.path);
+ const isFinance=['/receitas'].includes(entry.path);
  const expl=isPNCP?'Essa área será alimentada por dados públicos do Portal Nacional de Contratações Públicas (PNCP), incluindo detalhes e arquivos efetivamente disponíveis.':isFinance?'Esta área terá consulta automática dos últimos seis meses, com totais calculados apenas após recuperar todos os registros.':'O conteúdo será organizado, pesquisável e acessível, com preservação dos documentos e informações exigidos.';
  return `${heading(entry.section,entry.label,entry.description)}
  <div class="status-empty"><div class="empty-icon">${icon(entry.icon)}</div>
@@ -157,6 +157,101 @@ async function loadExpenses(force=false){
  }catch(e){expenseState.error=e.message||'Falha de conexão.'}
  finally{expenseState.loading=false;if(actualPath()==='/despesas/extraorcamentarias'){ROOT.innerHTML=expenseShell();renderExpenseResults()}}
 }
+
+const orcState={data:null,loading:false,error:null,search:'',sort:'empenho-desc',tipo:'Todos',page:1,progresso:null};
+function orcShell(){
+ const data=orcState.data, periodo=data?.metadados?.periodo;
+ const cards=['Empenho','Liquidação','Pagamento'].map((nome,i)=>{
+   const item=data?.resumo?.[nome];
+   return `<div class="stat-card"><div class="stat-top"><span>Movimentos de ${esc(nome.toLowerCase())}</span><span class="icon-square ${i===1?'blue':i===2?'gold':''}">${icon(i===0?'wallet':i===1?'activity':'receipt-text')}</span></div>
+   <div class="stat-value">${item?money(item.valor):'—'}</div>
+   <div class="stat-sub">${item?`${item.quantidade.toLocaleString('pt-BR')} movimentações na consulta completa`:'Aguardando todos os registros'}</div></div>`;
+ }).join('');
+ let progresso='';
+ if(orcState.loading){
+  const p=orcState.progresso||{};
+  progresso=`<div class="panel loading-block" role="status"><div class="spinner"></div><div><strong>Consultando despesas orçamentárias…</strong><br>
+  <span class="detail-note">${Number.isInteger(p.totalPaginas)?`${Number(p.paginasColetadas||0)} de ${Number(p.totalPaginas)} páginas coletadas`:'Iniciando consulta e conferindo a paginação'}${p.registros?' · '+Number(p.registros).toLocaleString('pt-BR')+' registros':''}</span></div></div>`;
+ }
+ return `${heading('Finanças públicas · Execução orçamentária','Despesas orçamentárias','Consulta automatizada dos últimos seis meses, organizada por empenho, liquidação e pagamento.',`<button id="refresh-orc" type="button" class="small-action">${icon('refresh-cw')} Atualizar consulta</button>`)}
+ <div class="meta-tags"><span class="tag">${icon('calendar-days')} ${periodo?fmtDate(periodo.inicio)+' até '+fmtDate(periodo.fim):'Últimos seis meses · período automático'}</span>
+ <span class="tag">${icon('shield-check')} Consulta protegida pelo servidor</span>${data?`<span class="tag">${icon('check-circle')} Coleta completa · ${Number(data.metadados.paginas)} páginas</span>`:''}</div>
+ <div class="stat-grid">${cards}</div>
+ ${sectionHead('Detalhamento orçamentário','<span class="section-note">Atualização sob demanda · cache de 5 minutos</span>')}
+ ${progresso}
+ ${orcState.error?`<div class="error-panel" role="alert">${icon('alert-circle')}<div><strong>Não foi possível concluir a coleta.</strong><p>${esc(orcState.error)} Nenhum total parcial será exibido.</p></div></div>`:''}
+ ${data?`<div class="data-toolbar">
+ <div class="input-with-icon">${icon('search')}<input class="text-input" id="orc-search" placeholder="Fornecedor, número do empenho ou processo…" value="${esc(orcState.search)}" aria-label="Pesquisar despesas orçamentárias"></div>
+ <select class="select-input" id="orc-tipo" aria-label="Tipo de movimentação">${['Todos','Empenho','Liquidação','Pagamento','Outros'].map(x=>`<option value="${esc(x)}" ${orcState.tipo===x?'selected':''}>${x==='Todos'?'Todos os movimentos':x}</option>`).join('')}</select>
+ <select class="select-input" id="orc-sort" aria-label="Ordenar despesas"><option value="empenho-desc" ${orcState.sort==='empenho-desc'?'selected':''}>Empenho (decrescente)</option><option value="empenho-asc" ${orcState.sort==='empenho-asc'?'selected':''}>Empenho (crescente)</option><option value="value-desc" ${orcState.sort==='value-desc'?'selected':''}>Maior valor</option><option value="value-asc" ${orcState.sort==='value-asc'?'selected':''}>Menor valor</option></select>
+ <button id="orc-export" class="toolbar-button" type="button">${icon('download')} Exportar CSV</button></div>
+ <div class="data-layout"><section class="panel"><div class="overview-title"><h2>Movimentações da consulta</h2><span class="chip green">${data.dados.length.toLocaleString('pt-BR')} registros</span></div><div id="orc-table-area"></div></section>
+ <section class="panel"><h2>Fornecedores por movimentos de empenho</h2><p class="lede detail-note">Os valores representam movimentos de empenho, não pagamentos.</p><div id="orc-ranking-area"></div></section></div>`:''}
+ <div class="notice-banner">${icon('info')}<div><strong>Como interpretar estes dados?</strong><p>Os valores acima somam exclusivamente o campo de valor de cada movimento, separado por sua natureza. Não são saldos contábeis de execução. A origem pode não informar a data de alguns registros${data?` (${Number(data.metadados.semData).toLocaleString('pt-BR')} sem data)` :''}; nesses casos exibimos “—”, sem inventar datas. A restrição aos últimos seis meses é aplicada na consulta feita pelo servidor.</p></div></div>`;
+}
+function filteredOrc(){
+ if(!orcState.data)return [];
+ const q=orcState.search.trim().toLocaleLowerCase('pt-BR');
+ return orcState.data.dados.filter(r=>(orcState.tipo==='Todos'||r.movimento===orcState.tipo)&&
+  (!q||[r.fornecedor,r.empenho,r.ano,r.processo,r.licitacao,r.modalidade,r.movimentoOriginal].some(v=>String(v??'').toLocaleLowerCase('pt-BR').includes(q))))
+  .sort((a,b)=>orcState.sort==='value-desc'?b.valor-a.valor:
+      orcState.sort==='value-asc'?a.valor-b.valor:
+      orcState.sort==='empenho-asc'?(a.ano-b.ano || Number(a.empenho)-Number(b.empenho)):
+      (b.ano-a.ano || Number(b.empenho)-Number(a.empenho)));
+}
+function renderOrcResults(){
+ if(!orcState.data)return;
+ const el=document.getElementById('orc-table-area'),rankingEl=document.getElementById('orc-ranking-area');
+ if(!el||!rankingEl)return;
+ const filtrados=filteredOrc(), paginas=Math.max(1,Math.ceil(filtrados.length/pageSize));
+ orcState.page=Math.min(paginas,Math.max(1,orcState.page));
+ const selecionados=filtrados.slice((orcState.page-1)*pageSize,orcState.page*pageSize);
+ el.innerHTML=`<div class="table-wrap"><table class="data-table"><thead><tr><th>Empenho / movimento</th><th>Fornecedor / processo</th><th>Data informada</th><th class="text-right">Valor do movimento</th></tr></thead>
+ <tbody>${selecionados.length?selecionados.map(r=>`<tr><td><strong>${esc(r.empenho||'—')}/${esc(r.ano??'—')}</strong><br><span class="subclass">${esc(r.movimentoOriginal)}</span></td>
+ <td><strong>${esc(r.fornecedor)}</strong><br><span class="subclass">${r.processo?'Processo: '+esc(r.processo):''}${r.modalidade?' · '+esc(r.modalidade):''}</span></td>
+ <td>${fmtDate(r.data)}</td><td class="value-inline">${money(r.valor)}</td></tr>`).join(''):'<tr><td colspan="4" class="centered">Nenhum resultado para os filtros selecionados.</td></tr>'}</tbody></table></div>
+ <div class="table-footer"><span>${filtrados.length?`${(orcState.page-1)*pageSize+1}–${Math.min(orcState.page*pageSize,filtrados.length)} de ${filtrados.length} registros`:'Nenhum registro'}</span>
+ <div class="page-buttons"><button data-orc-page="prev" type="button" ${orcState.page===1?'disabled':''}>Anterior</button><span class="page-counter">${orcState.page} / ${paginas}</span><button data-orc-page="next" type="button" ${orcState.page===paginas?'disabled':''}>Próxima</button></div></div>`;
+ const map=new Map();
+ for(const r of orcState.data.dados)if(r.movimento==='Empenho')map.set(r.fornecedor,(map.get(r.fornecedor)||0)+r.valor);
+ const rank=[...map].sort((a,b)=>b[1]-a[1]).slice(0,7),max=Math.max(1,...rank.map(r=>r[1]));
+ rankingEl.innerHTML=rank.length?`<ol class="ranking">${rank.map(([fornecedor,valor],i)=>`<li><div class="rank-heading"><span class="rank-name" title="${esc(fornecedor)}">${i+1}. ${esc(fornecedor)}</span><strong>${money(valor)}</strong></div>
+ <progress class="rank-progress" max="100" value="${Math.max(0,Math.min(100,valor/max*100)).toFixed(1)}" aria-label="Participação relativa de ${esc(fornecedor)}"></progress></li>`).join('')}</ol>`:'<p class="muted-message">Nenhum movimento de empenho neste período.</p>';
+}
+function exportOrcCSV(){
+ if(!orcState.data)return;
+ const safe=v=>{let x=String(v??'');if(/^[\s]*[=+\-@\t\r]/.test(x))x="'"+x;return '"'+x.replaceAll('"','""')+'"'};
+ const rows=[['Empenho','Ano','Movimento','Data','Fornecedor','Modalidade','Processo','Licitação','Valor do movimento'],
+ ...filteredOrc().map(r=>[r.empenho,r.ano,r.movimentoOriginal,r.data||'',r.fornecedor,r.modalidade,r.processo,r.licitacao,r.valor.toFixed(2).replace('.',',')])];
+ const csv='\ufeff'+rows.map(row=>row.map(safe).join(';')).join('\r\n');
+ const link=document.createElement('a');const obj=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+ link.href=obj;link.download='despesas-orcamentarias-ultimos-seis-meses.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(obj),1000);
+}
+async function loadOrc(force=false){
+ if(orcState.loading)return;
+ if(orcState.data&&!force){renderOrcResults();return}
+ orcState.loading=true;orcState.data=null;orcState.error=null;orcState.progresso=null;
+ ROOT.innerHTML=orcShell();
+ try{
+  for(let tentativa=0;tentativa<120;tentativa++){
+   const resposta=await fetch(urlFor('/api/despesas/orcamentarias'),{cache:'no-store'});
+   if(resposta.status===202){
+    orcState.progresso=await resposta.json();
+    if(actualPath()==='/despesas/orcamentarias')ROOT.innerHTML=orcShell();
+    await new Promise(r=>setTimeout(r,2200));
+    if(actualPath()!=='/despesas/orcamentarias')break;
+    continue;
+   }
+   if(!resposta.ok)throw new Error('Falha na consulta orçamentária (HTTP '+resposta.status+').');
+   const body=await resposta.json();
+   if(!body.metadados?.completo||!Array.isArray(body.dados)||!body.resumo)throw new Error('A resposta recebida não foi validada.');
+   orcState.data=body;break;
+  }
+  if(actualPath()==='/despesas/orcamentarias'&&!orcState.data)throw new Error('A coleta está demorando mais que o previsto. Tente novamente em alguns instantes.');
+ }catch(e){orcState.error=e?.message||'Falha inesperada.'}
+ finally{orcState.loading=false;if(actualPath()==='/despesas/orcamentarias'){ROOT.innerHTML=orcShell();renderOrcResults()}}
+}
+
 function showRoute(){
  let route=actualPath();const entry=routes.find(r=>r.path===route);
  document.title=(entry?entry.label+' | ':'')+PORTAL;
@@ -166,6 +261,7 @@ function showRoute(){
  if(!entry){ROOT.innerHTML=heading('Navegação','Página não encontrada','A página solicitada não existe neste portal.')+navA('/','Voltar à visão geral','small-action');return}
  if(route==='/'){ROOT.innerHTML=dashboard();return}
  if(route==='/despesas/extraorcamentarias'){ROOT.innerHTML=expenseShell();if(expenseState.data)renderExpenseResults();else void loadExpenses();return}
+ if(route==='/despesas/orcamentarias'){ROOT.innerHTML=orcShell();if(orcState.data)renderOrcResults();else void loadOrc();return}
  ROOT.innerHTML=placeholder(entry);
 }
 function navigate(path){
@@ -191,14 +287,23 @@ document.addEventListener('click',event=>{
  if(event.target.closest('#global-search'))openSearch();
  if(event.target.closest('#close-search')||event.target.closest('[data-close-search]'))closeSearch();
  if(event.target.closest('#refresh-expenses')){expenseState.search='';expenseState.page=1;void loadExpenses(true)}
+ if(event.target.closest('#refresh-orc')){orcState.search='';orcState.tipo='Todos';orcState.page=1;void loadOrc(true)}
+ if(event.target.closest('#orc-export'))exportOrcCSV();
+ const orcPaging=event.target.closest('[data-orc-page]');
+ if(orcPaging){orcState.page+=orcPaging.dataset.orcPage==='next'?1:-1;renderOrcResults()}
  if(event.target.closest('#expense-export'))exportCSV();
  const paging=event.target.closest('[data-expense-page]');if(paging){expenseState.page+=paging.dataset.expensePage==='next'?1:-1;renderExpenseResults();}
 });
 document.addEventListener('input',event=>{
  if(event.target.id==='search-input')renderSearch(event.target.value);
  if(event.target.id==='expense-search'){expenseState.search=event.target.value;expenseState.page=1;renderExpenseResults();}
+ if(event.target.id==='orc-search'){orcState.search=event.target.value;orcState.page=1;renderOrcResults();}
 });
-document.addEventListener('change',event=>{if(event.target.id==='expense-sort'){expenseState.sort=event.target.value;expenseState.page=1;renderExpenseResults()}});
+document.addEventListener('change',event=>{
+ if(event.target.id==='expense-sort'){expenseState.sort=event.target.value;expenseState.page=1;renderExpenseResults()}
+ if(event.target.id==='orc-sort'){orcState.sort=event.target.value;orcState.page=1;renderOrcResults()}
+ if(event.target.id==='orc-tipo'){orcState.tipo=event.target.value;orcState.page=1;renderOrcResults()}
+});
 document.addEventListener('keydown',event=>{
  if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();openSearch()}
  if(event.key==='Escape'){closeSearch();hideMenu()}

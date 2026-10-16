@@ -3,6 +3,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { consultarSeisMeses, obterPeriodoMovel } from './integracoes/despesa-extra.mjs';
+import { consultarSeisMesesOrc } from './integracoes/despesa-orcamentaria.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(ROOT, 'public');
@@ -25,6 +26,27 @@ const MIME = {
 const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'";
 const isProduction = process.env.NODE_ENV === 'production';
 let cached = null, inFlight = null;
+let orcJob = null;
+const ORC_TTL = 5 * 60_000;
+function iniciarColetaOrc(){
+  const key=getPeriodKey(), agora=Date.now();
+  if(orcJob?.key===key && (orcJob.estado==='coletando' ||
+      (orcJob.estado==='pronto' && agora-orcJob.concluidoEm<ORC_TTL) ||
+      (orcJob.estado==='erro' && agora-orcJob.concluidoEm<30000)))return orcJob;
+  const job={key,estado:'coletando',paginasColetadas:0,totalPaginas:null,registros:0,dados:null,erro:null,concluidoEm:null};
+  orcJob=job;
+  void consultarSeisMesesOrc({onProgress:p=>{
+    job.paginasColetadas=p.paginasColetadas;
+    job.totalPaginas=p.totalPaginas;
+    job.registros=p.registros;
+  }}).then(d=>{
+    job.dados=d;job.estado='pronto';job.concluidoEm=Date.now();
+  }).catch(e=>{
+    console.error('[despesas orcamentárias]',e?.codigo||'ERRO',e?.message||'falha');
+    job.erro=e?.codigo||'FONTE_INDISPONIVEL';job.estado='erro';job.concluidoEm=Date.now();
+  });
+  return job;
+}
 
 function commonHeaders(res) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -103,7 +125,7 @@ export const server=createServer(async(req,res)=>{
   if(localPath==='/api/health'){
     return respondJSON(res,200,{
       sistema:'Portal da Transparência - Pref.Mun.de Serra da Saudade MG',
-      version:'1.0.0', status:'online'
+      version:'1.1.0', status:'online'
     }, req.method);
   }
   if(localPath==='/api/periodo'){
@@ -127,6 +149,20 @@ export const server=createServer(async(req,res)=>{
       },req.method);
     }
   }
+  if(localPath==='/api/despesas/orcamentarias'){
+    if(parsed.searchParams.size)return respondJSON(res,400,{
+      erro:'O período é automático. Não são aceitos parâmetros de consulta.'
+    },req.method);
+    const job=iniciarColetaOrc();
+    if(job.estado==='pronto')return respondJSON(res,200,job.dados,req.method);
+    if(job.estado==='erro')return respondJSON(res,502,{
+      codigo:job.erro,erro:'Não foi possível concluir a consulta de despesas orçamentárias.'
+    },req.method);
+    return respondJSON(res,202,{
+      status:'coletando',paginasColetadas:job.paginasColetadas,
+      totalPaginas:job.totalPaginas,registros:job.registros
+    },req.method);
+  }
   if(localPath.startsWith('/api/')){
     return respondJSON(res,404,{erro:'Rota de API não encontrada.'},req.method);
   }
@@ -141,7 +177,7 @@ export const server=createServer(async(req,res)=>{
 });
 if(process.env.NODE_ENV!=='test'){
   server.listen(PORT,HOST,()=>{
-    console.log(`Portal da Transparência v1.0: http://localhost:${PORT}${BASE || '/'}`);
+    console.log(`Portal da Transparência v1.1: http://localhost:${PORT}${BASE || '/'}`);
     console.log('HTTPS público: configurar certificado/proxy da KingHost antes da publicação.');
   });
 }
