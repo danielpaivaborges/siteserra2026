@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#092f3c">
+  <meta name="description" content="Portal da Transparência - Prefeitura Municipal de Serra da Saudade, Minas Gerais. Consulte informações públicas, receitas, despesas, licitações e documentos.">
+  <meta name="app-base-path" content="__APP_BASE_PATH__">
+  <title>Portal da Transparência - Pref.Mun.de Serra da Saudade MG</title>
+  <link rel="icon" type="image/svg+xml" href="__APP_BASE_PATH__/favicon.svg">
+  <link rel="stylesheet" href="__APP_BASE_PATH__/assets/styles.css">
+  <script type="module" src="__APP_BASE_PATH__/assets/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+  <div class="site-shell" id="site-shell">
+    <div class="sidebar-shade" id="sidebar-shade" hidden></div>
+    <aside class="sidebar" id="sidebar" aria-label="Menu lateral">
+      <a class="brand" href="__APP_BASE_PATH__/" data-link>
+        <span class="brand-symbol" aria-hidden="true">
+          <svg width="38" height="38" viewBox="0 0 38 38" fill="none"><path d="M19 3 34 10v18l-15 7L4 28V10L19 3Z" fill="#24D5AA" fill-opacity=".16" stroke="#6CE5C7" stroke-width="1.3"/><path d="M9 26V15l10-6 10 6v11M14 27V17h10v10M19 17v10" stroke="#D8FFF2" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="brand-copy"><strong>Portal da<br>Transparência</strong><span>Serra da Saudade · MG</span></span>
+      </a>
+      <div class="side-rule"></div>
+      <nav id="menu-navegacao" aria-label="Navegação principal">
+        <p class="nav-section-label">EXPLORAR</p>
+        <a href="__APP_BASE_PATH__/" data-link data-route="/" class="nav-item"><span data-icon="layout-dashboard"></span> Visão geral</a>
+        <p class="nav-section-label">GESTÃO FINANCEIRA</p>
+        <a href="__APP_BASE_PATH__/receitas" data-link data-route="/receitas" class="nav-item"><span data-icon="trending-up"></span> Receitas públicas <span class="nav-dot" aria-hidden="true"></span></a>
+        <a href="__APP_BASE_PATH__/despesas/orcamentarias" data-link data-route="/despesas/orcamentarias" class="nav-item"><span data-icon="wallet"></span> Despesas orçamentárias</a>
+        <a href="__APP_BASE_PATH__/despesas/extraorcamentarias" data-link data-route="/despesas/extraorcamentarias" class="nav-item"><span data-icon="receipt-text"></span> Extraorçamentárias <span class="nav-status" title="Integração implementada" aria-label="Integração implementada"></span></a>
+        <a href="__APP_BASE_PATH__/demonstrativos" data-link data-route="/demonstrativos" class="nav-item"><span data-icon="chart-no-axes-combined"></span> Demonstrativos</a>
+        <p class="nav-section-label">COMPRAS PÚBLICAS</p>
+        <a href="__APP_BASE_PATH__/licitacoes" data-link data-route="/licitacoes" class="nav-item"><span data-icon="gavel"></span> Licitações e editais</a>
+        <a href="__APP_BASE_PATH__/contratos" data-link data-route="/contratos" class="nav-item"><span data-icon="file-check"></span> Contratos</a>
+        <a href="__APP_BASE_PATH__/atas" data-link data-route="/atas" class="nav-item"><span data-icon="clipboard-list"></span> Atas de registro de preços</a>
+        <p class="nav-section-label">INFORMAÇÕES</p>
+        <a href="__APP_BASE_PATH__/pessoal" data-link data-route="/pessoal" class="nav-item"><span data-icon="users"></span> Recursos humanos</a>
+        <a href="__APP_BASE_PATH__/legislacao" data-link data-route="/legislacao" class="nav-item"><span data-icon="scale"></span> Legislação</a>
+        <a href="__APP_BASE_PATH__/documentos" data-link data-route="/documentos" class="nav-item"><span data-icon="folder-open"></span> Documentos públicos</a>
+        <a href="__APP_BASE_PATH__/acesso-informacao" data-link data-route="/acesso-informacao" class="nav-item"><span data-icon="message-circle-question"></span> Acesso à informação</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="side-support">
+          <span class="side-support-icon" data-icon="shield-check"></span>
+          <div><strong>Transparência com clareza</strong><small>Informação pública acessível a todos.</small></div>
+        </div>
+        <span class="side-version">PORTAL 2026 · V1.0</span>
+      </div>
+    </aside>
+    <div class="app-area">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button type="button" id="menu-toggle" class="icon-button mobile-toggle" aria-label="Abrir menu" aria-expanded="false" aria-controls="sidebar"><span data-icon="menu"></span></button>
+          <div class="topbar-trail"><span class="trail-root">Prefeitura Municipal</span><span class="trail-sep">/</span><span id="header-location">Visão geral</span></div>
+        </div>
+        <div class="topbar-actions">
+          <button type="button" id="global-search" class="search-button" aria-haspopup="dialog" aria-label="Pesquisar seções do portal"><span data-icon="search"></span><span>Buscar no portal</span><kbd>Ctrl K</kbd></button>
+          <span class="topbar-line" aria-hidden="true"></span>
+          <span class="clock" id="clock" aria-label="Data de Brasília"></span>
+          <a href="__APP_BASE_PATH__/acesso-informacao" data-link class="help-button" title="Acesso à informação"><span data-icon="circle-help"></span><span>Ajuda</span></a>
+        </div>
+      </header>
+      <main id="conteudo" tabindex="-1" class="content"></main>
+      <footer class="footer">
+        <div><strong>Prefeitura Municipal de Serra da Saudade · MG</strong><span>Portal oficial da Transparência</span></div>
+        <div><span>Informação pública com responsabilidade.</span><span class="footer-divider">·</span><a href="__APP_BASE_PATH__/acesso-informacao" data-link>Acesso à informação</a></div>
+      </footer>
+    </div>
+  </div>
+  <div class="search-modal-wrap" id="search-modal" hidden>
+    <div class="search-backdrop" data-close-search></div>
+    <section class="search-dialog" role="dialog" aria-modal="true" aria-labelledby="search-title">
+      <div class="search-dialog-header">
+        <span data-icon="search"></span>
+        <label for="search-input" id="search-title" class="sr-only">Pesquisar seções do portal</label>
+        <input id="search-input" autocomplete="off" placeholder="Pesquise assuntos, relatórios ou páginas..." aria-label="Pesquisar seções">
+        <button type="button" id="close-search" aria-label="Fechar pesquisa" class="close-search"><span data-icon="x"></span></button>
+      </div>
+      <div class="search-results" id="search-results" role="listbox" aria-label="Resultados da pesquisa"></div>
+      <p class="search-footnote">Pesquise e navegue entre os módulos do portal. A busca nos dados será implementada por módulo.</p>
+    </section>
+  </div>
+  <noscript>Ative o JavaScript para visualizar os painéis e utilizar a navegação do portal.</noscript>
+</body>
+</html>
