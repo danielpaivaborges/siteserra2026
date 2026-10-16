@@ -20,3 +20,50 @@
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.001ms!important;transition-duration:.001ms!important}}
 .rank-progress{width:100%;height:8px;border:0;display:block;margin-top:9px;appearance:none}.rank-progress::-webkit-progress-bar{background:#edf3f4;border-radius:99px}.rank-progress::-webkit-progress-value{background:#13af91;border-radius:99px}.rank-progress::-moz-progress-bar{background:#13af91;border-radius:99px}.quiet-em{color:#afc0c6;font-size:17px}.detail-note{font-size:11px;margin-top:3px}
 .meta-margin{margin-bottom:19px}.subclass{color:#94a6ae;font-size:10px}.text-right{text-align:right}.page-counter{padding:7px}
+
+/* Versão 1.2 — listagens em largura integral, fornecedor em destaque. */
+.supplier-list{width:100%;min-width:0}
+.supplier-list .overview-title{margin-bottom:18px;flex-wrap:wrap}
+.supplier-list .table-wrap{max-width:100%;overflow-x:auto;scrollbar-width:thin}
+.supplier-list .data-table{min-width:690px;table-layout:auto}
+.supplier-list .data-table th:first-child,.supplier-list .data-table td:first-child{width:29%}
+.supplier-list .data-table td{overflow-wrap:anywhere;word-break:normal}
+.supplier-list .supplier-name{font-weight:750;color:#153b43;overflow-wrap:anywhere}
+.supplier-list .subclass{display:block;margin-top:4px;line-height:1.5}
+.supplier-list .data-table th:last-child{text-align:right}
+.data-toolbar>*{min-width:0}
+@media(max-width:760px){
+.app-area,.content,.panel,.supplier-list{min-width:0;max-width:100%}
+.page-heading-row>.small-action{max-width:100%}
+.section-head{flex-direction:column;align-items:flex-start;gap:5px}
+.data-toolbar{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.data-toolbar .input-with-icon{width:100%;min-width:0}
+.data-toolbar .text-input,.data-toolbar .select-input,.data-toolbar .toolbar-button{width:100%;min-width:0}
+.data-toolbar .toolbar-button{justify-content:center}
+.supplier-list{padding:14px 12px;border-radius:14px}
+.supplier-list .overview-title{gap:9px}
+.supplier-list .overview-title h2{font-size:15px}
+.supplier-list .table-wrap{border:none;border-radius:0;overflow:visible}
+.supplier-list .responsive-table{display:block;width:100%;min-width:0}
+.supplier-list .responsive-table thead{display:none}
+.supplier-list .responsive-table tbody{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.supplier-list .responsive-table tbody tr{display:block;min-width:0;border:1px solid #e2e9ed;border-radius:13px;background:#fff;box-shadow:0 3px 10px rgba(25,65,72,.035);overflow:hidden}
+.supplier-list .responsive-table tbody tr:hover{background:#fff}
+.supplier-list .responsive-table td,.supplier-list .responsive-table td:first-child,.supplier-list .responsive-table td:last-child{display:grid;grid-template-columns:minmax(86px,32%) minmax(0,1fr);align-items:start;column-gap:12px;width:100%;padding:11px 12px;border-top:1px solid #eff3f4;text-align:left!important;white-space:normal;overflow-wrap:anywhere;font-size:12px;line-height:1.5}
+.supplier-list .responsive-table tr td:first-child{border-top:0;background:#f2faf7}
+.supplier-list .responsive-table td[data-label]::before{content:attr(data-label);font-size:10px;font-weight:800;line-height:1.55;color:#64818a;letter-spacing:.015em}
+.supplier-list .responsive-table .supplier-name{font-size:12.5px}
+.supplier-list .responsive-table .empty-row td{display:block;text-align:center!important;background:white;padding:24px 14px}
+.table-footer{flex-direction:column;align-items:stretch;gap:12px;padding:15px 3px 3px;overflow-wrap:anywhere}
+.page-buttons{display:flex;align-items:center;justify-content:space-between;width:100%}
+.page-buttons button{min-height:38px;min-width:90px}
+.page-counter{text-align:center;min-width:0}
+.meta-tags .tag{max-width:100%;overflow-wrap:anywhere}
+.notice-banner{padding:14px;gap:8px}
+}
+@media(max-width:360px){
+.content{padding-left:11px;padding-right:11px}
+.supplier-list{padding:11px 9px}
+.supplier-list .responsive-table td,.supplier-list .responsive-table td:first-child,.supplier-list .responsive-table td:last-child{grid-template-columns:minmax(75px,35%) minmax(0,1fr);column-gap:8px;padding:10px 9px}
+.topbar{padding-left:12px;padding-right:12px}
+}

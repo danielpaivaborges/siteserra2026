@@ -129,3 +129,10 @@ Depois abra `http://localhost:4173/despesas/orcamentarias` e pressione
 `Ctrl + Shift + R` uma vez, caso necessário.
 
 A atualização não habilita HTTPS local; HTTPS público depende do certificado e proxy KingHost.
+
+## Versão 1.2.0 — listagens e celulares
+- Sem rankings de fornecedores, cartões somatórios ou gráficos comparativos nas despesas orçamentárias e extraorçamentárias.
+- Listagens de movimentos com fornecedor em primeira coluna, filtros, busca, paginação e exportação CSV.
+- No celular, as tabelas financeiras viram cartões com todas as informações identificadas, sem cortar colunas.
+- Janela móvel de seis meses preservada integralmente nas APIs; conectores não foram alterados.
+- Para atualizar localmente: `git pull origin main`, reinicie `npm.cmd start`, confira `/api/health` versão 1.2.0.

@@ -12,7 +12,7 @@ test.after(()=>new Promise(resolve=>server.close(resolve)));
 
 test('responde indicador de funcionamento',async()=>{
  const r=await fetch(base+'/api/health');const d=await r.json();
- assert.equal(r.status,200);assert.equal(d.status,'online');assert.equal(d.version,'1.1.1');
+ assert.equal(r.status,200);assert.equal(d.status,'online');assert.equal(d.version,'1.2.0');
  assert.match(d.sistema,/Pref\.Mun\.de Serra da Saudade MG/);
  assert.equal(r.headers.get('x-content-type-options'),'nosniff');
 });
@@ -27,7 +27,7 @@ test('permite links diretos dos módulos e devolve HTML',async()=>{
  const r=await fetch(base+'/licitacoes');
  const text=await r.text();
  assert.equal(r.status,200);assert.match(text,/Portal da Transparência/);
- assert.match(text,/assets\/app\.js\?v=1\.1\.1/);
+ assert.match(text,/assets\/app\.js\?v=1\.2\.0/);
  assert.doesNotMatch(text,/transparencia\.serradasaudade\.mg\.gov\.br/);
 });
 test('entrega CSS com cabeçalhos restritivos',async()=>{
@@ -56,14 +56,27 @@ test('protege as datas do novo módulo e inicia coleta em segundo plano',async()
 
 test('evita carregar JavaScript antigo após atualização',async()=>{
   const page=await (await fetch(base+'/despesas/orcamentarias')).text();
-  assert.match(page,/assets\/app\.js\?v=1\.1\.1/);
-  assert.match(page,/assets\/styles\.css\?v=1\.1\.1/);
-  const js=await fetch(base+'/assets/app.js?v=1.1.1');
+  assert.match(page,/assets\/app\.js\?v=1\.2\.0/);
+  assert.match(page,/assets\/styles\.css\?v=1\.2\.0/);
+  const js=await fetch(base+'/assets/app.js?v=1.2.0');
   assert.equal(js.status,200);
   assert.equal(js.headers.get('cache-control'),'no-store');
   const code=await js.text();
   assert.match(code,/if\(route==='\/despesas\/orcamentarias'\)/);
   assert.match(code,/loadOrc\(\)/);
-  const css=await fetch(base+'/assets/styles.css?v=1.1.1');
+  const css=await fetch(base+'/assets/styles.css?v=1.2.0');
   assert.equal(css.headers.get('cache-control'),'no-store');
+});
+
+test('listagem de fornecedores substitui rankings financeiros',async()=>{
+ const js=await (await fetch(base+'/assets/app.js?v=1.2.0')).text();
+ assert.match(js,/Fornecedores e movimentações/);
+ assert.match(js,/data-label="Fornecedor"/);
+ assert.doesNotMatch(js,/expense-ranking-area|orc-ranking-area|Principais credores por valor|Fornecedores por movimentos de empenho/);
+});
+test('tabelas financeiras adaptam as colunas para cartão no celular',async()=>{
+ const css=await (await fetch(base+'/assets/styles.css?v=1.2.0')).text();
+ assert.match(css,/\.supplier-list \.responsive-table thead\{display:none\}/);
+ assert.match(css,/content:attr\(data-label\)/);
+ assert.match(css,/\.data-toolbar\{display:grid/);
 });

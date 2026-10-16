@@ -10,7 +10,7 @@ const PUBLIC = path.join(ROOT, 'public');
 const rawBase = String(process.env.BASE_PATH || '').trim();
 if (rawBase && !/^\/[a-zA-Z0-9/_-]*$/.test(rawBase)) throw new Error('BASE_PATH inválido');
 const BASE = rawBase.replace(/\/+$/, '');
-const VERSION = '1.1.1';
+const VERSION = '1.2.0';
 const PORT = Number(process.env.PORT || process.env.PORT_INDEX || process.env.PORT_APP || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const TTL = 5 * 60_000;

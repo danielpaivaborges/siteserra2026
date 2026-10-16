@@ -92,34 +92,28 @@ function placeholder(entry){
  ${sectionHead('Como esta área será organizada')}
  <div class="small-info"><div class="info-item">${icon('search')}<h3>Busca e filtros</h3><p>Localize registros com poucos passos.</p></div><div class="info-item">${icon('file-bar-chart')}<h3>Informação compreensível</h3><p>Detalhes e indicadores com contexto.</p></div><div class="info-item">${icon('download')}<h3>Documentos e exportação</h3><p>Acesso aos arquivos que forem publicados.</p></div></div>`;
 }
-const expenseState={data:null,loading:false,error:null,search:'',sort:'date-desc',page:1};
+const expenseState={data:null,loading:false,error:null,search:'',sort:'supplier-asc',page:1};
 const pageSize=15;
 function expenseShell(){
  const data=expenseState.data;
  const period=data?.metadados?.periodo;
- let stats=data ? `<div class="stat-grid">
- <div class="stat-card"><div class="stat-top"><span>Total movimentado no período</span><span class="icon-square">${icon('wallet')}</span></div><div class="stat-value">${money(data.resumo.totalMovimentado)}</div><div class="stat-sub">Despesas extraorçamentárias · conjunto completo</div></div>
- <div class="stat-card"><div class="stat-top"><span>Movimentações registradas</span><span class="icon-square blue">${icon('receipt-text')}</span></div><div class="stat-value">${Number(data.resumo.quantidade).toLocaleString('pt-BR')}</div><div class="stat-sub">Registros obtidos em todas as páginas</div></div>
- <div class="stat-card"><div class="stat-top"><span>Credores / Contas</span><span class="icon-square gold">${icon('users')}</span></div><div class="stat-value">${Number(data.resumo.credores)} <span class="quiet-em">/</span> ${Number(data.resumo.contas)}</div><div class="stat-sub">Identificações distintas no intervalo</div></div></div>`
- : `<div class="stat-grid">${['Total movimentado','Movimentações registradas','Credores / Contas'].map((name,i)=>`<div class="stat-card"><div class="stat-top"><span>${name}</span><span class="icon-square ${i===1?'blue':i===2?'gold':''}">${icon(i===0?'wallet':i===1?'receipt-text':'users')}</span></div><div class="stat-value">—</div><div class="stat-sub">Aguardando consulta completa</div></div>`).join('')}</div>`;
  return `${heading('Finanças públicas · Movimentações','Despesas extraorçamentárias','Consulta automática dos últimos seis meses, com consolidação de todas as páginas de registros.',`<button id="refresh-expenses" type="button" class="small-action">${icon('refresh-cw')} Atualizar consulta</button>`)}
  <div class="meta-tags" class="meta-margin"><span class="tag">${icon('calendar-days')} ${period?fmtDate(period.inicio)+' até '+fmtDate(period.fim):'Período móvel · seis meses'}</span><span class="tag">${icon('shield-check')} Dados consultados pelo servidor municipal</span>${data?`<span class="tag">${icon('check-circle')} Coleta completa · ${Number(data.metadados.paginas)} páginas</span>`:''}</div>
- ${stats}
- ${sectionHead('Detalhamento das movimentações',`<span class="section-note">Atualização sob demanda · cache temporário</span>`)}
+ ${sectionHead('Listagem de fornecedores',`<span class="section-note">Atualização sob demanda · cache temporário</span>`)}
  ${expenseState.loading?`<div class="panel loading-block" role="status"><div class="spinner"></div>Consultando e validando todos os registros do período...</div>`:''}
  ${expenseState.error?`<div class="error-panel" role="alert">${icon('alert-circle')}<div><strong>Não foi possível carregar a consulta.</strong>${esc(expenseState.error)} Os totais não serão apresentados até a coleta estar completa.</div></div>`:''}
  ${data?`<div class="data-toolbar"><div class="input-with-icon">${icon('search')}<input class="text-input" id="expense-search" placeholder="Buscar credor, conta ou classificação..." value="${esc(expenseState.search)}" aria-label="Buscar movimentações"></div>
- <select class="select-input" id="expense-sort" aria-label="Ordenação"><option value="date-desc" ${expenseState.sort==='date-desc'?'selected':''}>Mais recentes</option><option value="date-asc" ${expenseState.sort==='date-asc'?'selected':''}>Mais antigas</option><option value="value-desc" ${expenseState.sort==='value-desc'?'selected':''}>Maior valor</option><option value="value-asc" ${expenseState.sort==='value-asc'?'selected':''}>Menor valor</option></select>
+ <select class="select-input" id="expense-sort" aria-label="Ordenação"><option value="supplier-asc" ${expenseState.sort==='supplier-asc'?'selected':''}>Fornecedor A–Z</option><option value="supplier-desc" ${expenseState.sort==='supplier-desc'?'selected':''}>Fornecedor Z–A</option><option value="date-desc" ${expenseState.sort==='date-desc'?'selected':''}>Mais recentes</option><option value="date-asc" ${expenseState.sort==='date-asc'?'selected':''}>Mais antigas</option><option value="value-desc" ${expenseState.sort==='value-desc'?'selected':''}>Maior valor</option><option value="value-asc" ${expenseState.sort==='value-asc'?'selected':''}>Menor valor</option></select>
  <button id="expense-export" class="toolbar-button" type="button">${icon('download')} Exportar CSV</button></div>
- <div class="data-layout"><section class="panel"><div class="overview-title"><h2>Registros do período</h2><span class="chip green">${data.dados.length.toLocaleString('pt-BR')} registros obtidos</span></div><div id="expense-table-area"></div></section>
- <section class="panel"><h2>Principais credores por valor</h2><p class="lede" class="detail-note">Ranking a partir do conjunto completo da consulta.</p><div id="expense-ranking-area"></div></section></div>`:''}
+ <section class="panel supplier-list"><div class="overview-title"><h2>Fornecedores e movimentações</h2><span class="chip green">${data.dados.length.toLocaleString('pt-BR')} registros obtidos</span></div><div id="expense-table-area"></div></section>
+ `:''}
  <div class="notice-banner">${icon('info')}<div><strong>Como interpretar estes valores?</strong><p>Este módulo apresenta movimentações extraorçamentárias, como consignações e repasses, e não representa a despesa orçamentária total da Prefeitura. O período móvel é definido no servidor e não pode ser ampliado por filtros.</p></div></div>`;
 }
 function filteredExpenses(){
  if(!expenseState.data)return [];
  const term=expenseState.search.toLocaleLowerCase('pt-BR').trim();
  return expenseState.data.dados.filter(row=>!term||[row.nomCredor,row.desConta,row.desClassificacao,fmtDate(row.datMovimento)].some(v=>String(v??'').toLocaleLowerCase('pt-BR').includes(term)))
- .sort((a,b)=>expenseState.sort==='date-desc'?b.datMovimento.localeCompare(a.datMovimento):expenseState.sort==='date-asc'?a.datMovimento.localeCompare(b.datMovimento):expenseState.sort==='value-desc'?b.vlrDespesa-a.vlrDespesa:a.vlrDespesa-b.vlrDespesa);
+ .sort((a,b)=>expenseState.sort==='supplier-asc'?String(a.nomCredor||'').localeCompare(String(b.nomCredor||''),'pt-BR'):expenseState.sort==='supplier-desc'?String(b.nomCredor||'').localeCompare(String(a.nomCredor||''),'pt-BR'):expenseState.sort==='date-desc'?b.datMovimento.localeCompare(a.datMovimento):expenseState.sort==='date-asc'?a.datMovimento.localeCompare(b.datMovimento):expenseState.sort==='value-desc'?b.vlrDespesa-a.vlrDespesa:a.vlrDespesa-b.vlrDespesa);
 }
 function renderExpenseResults(){
  if(!expenseState.data)return;
@@ -127,12 +121,8 @@ function renderExpenseResults(){
  expenseState.page=Math.max(1,Math.min(expenseState.page,pages));
  const sliced=rows.slice((expenseState.page-1)*pageSize,expenseState.page*pageSize);
  document.getElementById('expense-table-area').innerHTML=`
- <div class="table-wrap"><table class="data-table"><thead><tr><th>Data</th><th>Conta / Classificação</th><th>Credor</th><th class="text-right">Valor</th></tr></thead><tbody>${sliced.length?sliced.map(row=>`<tr><td>${fmtDate(row.datMovimento)}</td><td><strong>${esc(row.desConta||'—')}</strong><br><span class="subclass">${esc(row.desClassificacao||'')}</span></td><td>${esc(row.nomCredor||'Não informado')}</td><td class="value-inline">${money(row.vlrDespesa)}</td></tr>`).join(''):'<tr><td colspan="4" class="centered">Nenhum registro corresponde à busca.</td></tr>'}</tbody></table></div>
+ <div class="table-wrap"><table class="data-table responsive-table"><thead><tr><th>Fornecedor</th><th>Conta / Classificação</th><th>Data</th><th class="text-right">Valor</th></tr></thead><tbody>${sliced.length?sliced.map(row=>`<tr><td data-label="Fornecedor"><strong class="supplier-name">${esc(row.nomCredor||'Não informado')}</strong></td><td data-label="Conta / classificação"><strong>${esc(row.desConta||'—')}</strong><span class="subclass">${esc(row.desClassificacao||'')}</span></td><td data-label="Data">${fmtDate(row.datMovimento)}</td><td data-label="Valor" class="value-inline">${money(row.vlrDespesa)}</td></tr>`).join(''):'<tr><td colspan="4" class="centered">Nenhum registro corresponde à busca.</td></tr>'}</tbody></table></div>
  <div class="table-footer"><span>${rows.length===0?'Nenhum registro':`${(expenseState.page-1)*pageSize+1}–${Math.min(expenseState.page*pageSize,rows.length)} de ${rows.length} registros filtrados`}</span><div class="page-buttons"><button type="button" data-expense-page="prev" ${expenseState.page<=1?'disabled':''}>Anterior</button><span class="page-counter">${expenseState.page} / ${pages}</span><button type="button" data-expense-page="next" ${expenseState.page>=pages?'disabled':''}>Próxima</button></div></div>`;
- const ranks=new Map();
- for(const row of expenseState.data.dados){const k=(row.nomCredor||'Não informado').trim();ranks.set(k,(ranks.get(k)||0)+row.vlrDespesa)}
- const ranking=[...ranks].sort((a,b)=>b[1]-a[1]).slice(0,7),top=Math.max(1,ranking[0]?.[1]||0);
- document.getElementById('expense-ranking-area').innerHTML=ranking.length?`<ol class="ranking">${ranking.map(([name,value],i)=>`<li><div class="rank-heading"><span class="rank-name" title="${esc(name)}">${i+1}. ${esc(name)}</span><strong>${money(value)}</strong></div><progress class="rank-progress" max="100" value="${Math.max(0,Math.min(100,value/top*100)).toFixed(1)}" aria-label="Participação relativa de ${esc(name)}"></progress></li>`).join('')}</ol>`:'<p class="muted-message">Nenhum credor para o período.</p>';
 }
 function exportCSV(){
  if(!expenseState.data)return;
@@ -158,15 +148,9 @@ async function loadExpenses(force=false){
  finally{expenseState.loading=false;if(actualPath()==='/despesas/extraorcamentarias'){ROOT.innerHTML=expenseShell();renderExpenseResults()}}
 }
 
-const orcState={data:null,loading:false,error:null,search:'',sort:'empenho-desc',tipo:'Todos',page:1,progresso:null};
+const orcState={data:null,loading:false,error:null,search:'',sort:'supplier-asc',tipo:'Todos',page:1,progresso:null};
 function orcShell(){
  const data=orcState.data, periodo=data?.metadados?.periodo;
- const cards=['Empenho','Liquidação','Pagamento'].map((nome,i)=>{
-   const item=data?.resumo?.[nome];
-   return `<div class="stat-card"><div class="stat-top"><span>Movimentos de ${esc(nome.toLowerCase())}</span><span class="icon-square ${i===1?'blue':i===2?'gold':''}">${icon(i===0?'wallet':i===1?'activity':'receipt-text')}</span></div>
-   <div class="stat-value">${item?money(item.valor):'—'}</div>
-   <div class="stat-sub">${item?`${item.quantidade.toLocaleString('pt-BR')} movimentações na consulta completa`:'Aguardando todos os registros'}</div></div>`;
- }).join('');
  let progresso='';
  if(orcState.loading){
   const p=orcState.progresso||{};
@@ -176,47 +160,39 @@ function orcShell(){
  return `${heading('Finanças públicas · Execução orçamentária','Despesas orçamentárias','Consulta automatizada dos últimos seis meses, organizada por empenho, liquidação e pagamento.',`<button id="refresh-orc" type="button" class="small-action">${icon('refresh-cw')} Atualizar consulta</button>`)}
  <div class="meta-tags"><span class="tag">${icon('calendar-days')} ${periodo?fmtDate(periodo.inicio)+' até '+fmtDate(periodo.fim):'Últimos seis meses · período automático'}</span>
  <span class="tag">${icon('shield-check')} Consulta protegida pelo servidor</span>${data?`<span class="tag">${icon('check-circle')} Coleta completa · ${Number(data.metadados.paginas)} páginas</span>`:''}</div>
- <div class="stat-grid">${cards}</div>
- ${sectionHead('Detalhamento orçamentário','<span class="section-note">Atualização sob demanda · cache de 5 minutos</span>')}
+  ${sectionHead('Listagem de fornecedores','<span class="section-note">Atualização sob demanda · cache de 5 minutos</span>')}
  ${progresso}
  ${orcState.error?`<div class="error-panel" role="alert">${icon('alert-circle')}<div><strong>Não foi possível concluir a coleta.</strong><p>${esc(orcState.error)} Nenhum total parcial será exibido.</p></div></div>`:''}
  ${data?`<div class="data-toolbar">
  <div class="input-with-icon">${icon('search')}<input class="text-input" id="orc-search" placeholder="Fornecedor, número do empenho ou processo…" value="${esc(orcState.search)}" aria-label="Pesquisar despesas orçamentárias"></div>
  <select class="select-input" id="orc-tipo" aria-label="Tipo de movimentação">${['Todos','Empenho','Liquidação','Pagamento','Outros'].map(x=>`<option value="${esc(x)}" ${orcState.tipo===x?'selected':''}>${x==='Todos'?'Todos os movimentos':x}</option>`).join('')}</select>
- <select class="select-input" id="orc-sort" aria-label="Ordenar despesas"><option value="empenho-desc" ${orcState.sort==='empenho-desc'?'selected':''}>Empenho (decrescente)</option><option value="empenho-asc" ${orcState.sort==='empenho-asc'?'selected':''}>Empenho (crescente)</option><option value="value-desc" ${orcState.sort==='value-desc'?'selected':''}>Maior valor</option><option value="value-asc" ${orcState.sort==='value-asc'?'selected':''}>Menor valor</option></select>
+ <select class="select-input" id="orc-sort" aria-label="Ordenar despesas"><option value="supplier-asc" ${orcState.sort==='supplier-asc'?'selected':''}>Fornecedor A–Z</option><option value="supplier-desc" ${orcState.sort==='supplier-desc'?'selected':''}>Fornecedor Z–A</option><option value="empenho-desc" ${orcState.sort==='empenho-desc'?'selected':''}>Empenho (decrescente)</option><option value="empenho-asc" ${orcState.sort==='empenho-asc'?'selected':''}>Empenho (crescente)</option><option value="value-desc" ${orcState.sort==='value-desc'?'selected':''}>Maior valor</option><option value="value-asc" ${orcState.sort==='value-asc'?'selected':''}>Menor valor</option></select>
  <button id="orc-export" class="toolbar-button" type="button">${icon('download')} Exportar CSV</button></div>
- <div class="data-layout"><section class="panel"><div class="overview-title"><h2>Movimentações da consulta</h2><span class="chip green">${data.dados.length.toLocaleString('pt-BR')} registros</span></div><div id="orc-table-area"></div></section>
- <section class="panel"><h2>Fornecedores por movimentos de empenho</h2><p class="lede detail-note">Os valores representam movimentos de empenho, não pagamentos.</p><div id="orc-ranking-area"></div></section></div>`:''}
- <div class="notice-banner">${icon('info')}<div><strong>Como interpretar estes dados?</strong><p>Os valores acima somam exclusivamente o campo de valor de cada movimento, separado por sua natureza. Não são saldos contábeis de execução. A origem pode não informar a data de alguns registros${data?` (${Number(data.metadados.semData).toLocaleString('pt-BR')} sem data)` :''}; nesses casos exibimos “—”, sem inventar datas. A restrição aos últimos seis meses é aplicada na consulta feita pelo servidor.</p></div></div>`;
+ <section class="panel supplier-list"><div class="overview-title"><h2>Fornecedores e movimentações</h2><span class="chip green">${data.dados.length.toLocaleString('pt-BR')} registros</span></div><div id="orc-table-area"></div></section>
+ `:''}
+ <div class="notice-banner">${icon('info')}<div><strong>Como interpretar estes dados?</strong><p>Esta listagem mostra movimentos individuais por fornecedor. Os valores apresentados não representam necessariamente pagamentos. A origem pode não informar a data de alguns registros${data?` (${Number(data.metadados.semData).toLocaleString('pt-BR')} sem data)` :''}; nesses casos exibimos “—”, sem inventar datas. A restrição aos últimos seis meses é aplicada na consulta feita pelo servidor.</p></div></div>`;
 }
 function filteredOrc(){
  if(!orcState.data)return [];
  const q=orcState.search.trim().toLocaleLowerCase('pt-BR');
  return orcState.data.dados.filter(r=>(orcState.tipo==='Todos'||r.movimento===orcState.tipo)&&
   (!q||[r.fornecedor,r.empenho,r.ano,r.processo,r.licitacao,r.modalidade,r.movimentoOriginal].some(v=>String(v??'').toLocaleLowerCase('pt-BR').includes(q))))
-  .sort((a,b)=>orcState.sort==='value-desc'?b.valor-a.valor:
+  .sort((a,b)=>orcState.sort==='supplier-asc'?a.fornecedor.localeCompare(b.fornecedor,'pt-BR'):orcState.sort==='supplier-desc'?b.fornecedor.localeCompare(a.fornecedor,'pt-BR'):orcState.sort==='value-desc'?b.valor-a.valor:
       orcState.sort==='value-asc'?a.valor-b.valor:
       orcState.sort==='empenho-asc'?(a.ano-b.ano || Number(a.empenho)-Number(b.empenho)):
       (b.ano-a.ano || Number(b.empenho)-Number(a.empenho)));
 }
 function renderOrcResults(){
  if(!orcState.data)return;
- const el=document.getElementById('orc-table-area'),rankingEl=document.getElementById('orc-ranking-area');
- if(!el||!rankingEl)return;
+ const el=document.getElementById('orc-table-area');
+ if(!el)return;
  const filtrados=filteredOrc(), paginas=Math.max(1,Math.ceil(filtrados.length/pageSize));
  orcState.page=Math.min(paginas,Math.max(1,orcState.page));
  const selecionados=filtrados.slice((orcState.page-1)*pageSize,orcState.page*pageSize);
- el.innerHTML=`<div class="table-wrap"><table class="data-table"><thead><tr><th>Empenho / movimento</th><th>Fornecedor / processo</th><th>Data informada</th><th class="text-right">Valor do movimento</th></tr></thead>
- <tbody>${selecionados.length?selecionados.map(r=>`<tr><td><strong>${esc(r.empenho||'—')}/${esc(r.ano??'—')}</strong><br><span class="subclass">${esc(r.movimentoOriginal)}</span></td>
- <td><strong>${esc(r.fornecedor)}</strong><br><span class="subclass">${r.processo?'Processo: '+esc(r.processo):''}${r.modalidade?' · '+esc(r.modalidade):''}</span></td>
- <td>${fmtDate(r.data)}</td><td class="value-inline">${money(r.valor)}</td></tr>`).join(''):'<tr><td colspan="4" class="centered">Nenhum resultado para os filtros selecionados.</td></tr>'}</tbody></table></div>
+ el.innerHTML=`<div class="table-wrap"><table class="data-table responsive-table"><thead><tr><th>Fornecedor</th><th>Empenho / movimento</th><th>Processo / modalidade</th><th>Data</th><th class="text-right">Valor do movimento</th></tr></thead>
+ <tbody>${selecionados.length?selecionados.map(r=>`<tr><td data-label="Fornecedor"><strong class="supplier-name">${esc(r.fornecedor)}</strong></td><td data-label="Empenho / movimento"><strong>${esc(r.empenho||'—')}/${esc(r.ano??'—')}</strong><span class="subclass">${esc(r.movimentoOriginal)}</span></td><td data-label="Processo / modalidade"><strong>${esc(r.processo||'—')}</strong><span class="subclass">${esc(r.modalidade||'')}</span></td><td data-label="Data">${fmtDate(r.data)}</td><td data-label="Valor" class="value-inline">${money(r.valor)}</td></tr>`).join(''):'<tr><td colspan="4" class="centered">Nenhum resultado para os filtros selecionados.</td></tr>'}</tbody></table></div>
  <div class="table-footer"><span>${filtrados.length?`${(orcState.page-1)*pageSize+1}–${Math.min(orcState.page*pageSize,filtrados.length)} de ${filtrados.length} registros`:'Nenhum registro'}</span>
  <div class="page-buttons"><button data-orc-page="prev" type="button" ${orcState.page===1?'disabled':''}>Anterior</button><span class="page-counter">${orcState.page} / ${paginas}</span><button data-orc-page="next" type="button" ${orcState.page===paginas?'disabled':''}>Próxima</button></div></div>`;
- const map=new Map();
- for(const r of orcState.data.dados)if(r.movimento==='Empenho')map.set(r.fornecedor,(map.get(r.fornecedor)||0)+r.valor);
- const rank=[...map].sort((a,b)=>b[1]-a[1]).slice(0,7),max=Math.max(1,...rank.map(r=>r[1]));
- rankingEl.innerHTML=rank.length?`<ol class="ranking">${rank.map(([fornecedor,valor],i)=>`<li><div class="rank-heading"><span class="rank-name" title="${esc(fornecedor)}">${i+1}. ${esc(fornecedor)}</span><strong>${money(valor)}</strong></div>
- <progress class="rank-progress" max="100" value="${Math.max(0,Math.min(100,valor/max*100)).toFixed(1)}" aria-label="Participação relativa de ${esc(fornecedor)}"></progress></li>`).join('')}</ol>`:'<p class="muted-message">Nenhum movimento de empenho neste período.</p>';
 }
 function exportOrcCSV(){
  if(!orcState.data)return;
